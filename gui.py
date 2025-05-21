@@ -29,10 +29,10 @@ class GAApp(ctk.CTk):
         container.grid_columnconfigure(1, weight=0)
 
         # Add menu items
-        title_label = ctk.CTkLabel(container, text="Magic Box - GA Evolution", font=title_font)
-        title_label.grid(row=0, column=0, padx=(0,10), pady=30, sticky="n")
+        title_label = ctk.CTkLabel(container, text="Magic Square - GA Evolution", font=title_font, anchor="center")
+        title_label.grid(row=0, column=0, padx=(0,10), pady=30, sticky="n", columnspan=2)
 
-        dimension_label = ctk.CTkLabel(container, text="Magic Box Size:", font=global_font)
+        dimension_label = ctk.CTkLabel(container, text="Magic Square Size:", font=global_font)
         dimension_label.grid(row=1, column=0, padx=(0, 10), pady=20, sticky="w")
 
         dimension_entry = ctk.CTkEntry(container, width=120, font=global_font)
