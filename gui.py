@@ -75,14 +75,10 @@ class GAApp(ctk.CTk):
         self.play_frame.pack(fill="both", expand=True)
 
         self.initial_stats_frame = ctk.CTkFrame(self.play_frame, fg_color="transparent")
-        self.initial_stats_frame.pack(fill="both", expand=True)
+        self.initial_stats_frame.grid(row=0, column=0, padx=(200,50), pady=20, sticky="nw")
 
         self.final_stats_frame = ctk.CTkFrame(self.play_frame, fg_color="transparent")
-        self.final_stats_frame.pack(padx=(0,100), anchor="e")
-
-        # Result and stats
-        self.result_label = ctk.CTkLabel(self.play_frame, text="", anchor="center")
-        self.result_label.pack(pady=6)
+        self.final_stats_frame.grid(row=0, column=1, padx=(50, 200), pady=20, sticky="ne")
 
         self.initial_square_frame = ctk.CTkFrame(self.initial_stats_frame, fg_color="transparent")
         self.initial_square_frame.pack(padx=20, pady=20, anchor="w")
@@ -159,7 +155,7 @@ class GAApp(ctk.CTk):
             anchor="center",
             font=("Verdana-Bold", 24)
         )
-        self.final_stats_label.pack(padx=100, pady=6, anchor="ne")
+        self.final_stats_label.pack(padx=100, pady=6, anchor="w")
 
         self.initial_fitness_max_label = ctk.CTkLabel(
             self.initial_stats_frame,
@@ -176,18 +172,18 @@ class GAApp(ctk.CTk):
         self.initial_fitness_min_label.pack(padx=30, pady=6, anchor="w")
 
         self.final_fitness_best_label = ctk.CTkLabel(
-            self.initial_stats_frame,
+            self.final_stats_frame,
             text="Best Fitness: 100 (demo)",
             anchor="center", font=global_font
         )
-        self.final_fitness_best_label.pack(padx=30, pady=6, anchor="e")
+        self.final_fitness_best_label.pack(padx=30, pady=6, anchor="w")
 
         self.final_fitness_min_label = ctk.CTkLabel(
-            self.initial_stats_frame,
+            self.final_stats_frame,
             text="Min Fitness: 43 (demo)",
             anchor="center", font=global_font
         )
-        self.final_fitness_min_label.pack(padx=30, pady=6, anchor="e")
+        self.final_fitness_min_label.pack(padx=30, pady=6, anchor="w")
 
 
 title_font = ("Helvetica", 36)
