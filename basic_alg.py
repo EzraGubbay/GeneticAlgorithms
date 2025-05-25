@@ -153,10 +153,10 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
         # Evaluate fitness for entire population depending on strategy
         if strategy == 'lamarckian':
             population = local_optimization(population, n)  # Optimize population if Lamarckian
-            
+
         fitnesses = [fitness(ind, n) for ind in population] #calculate fitness for all cases
         best_solution = population[fitnesses.index(max(fitnesses))]  # Find the best solution in the current population
-        
+
         # Create next generation with elitism: preserve the best individual
         next_gen = [best_solution.copy()]
         # counterTrueMutaion = 0
@@ -176,11 +176,13 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
             if random.random() < mutation_rate:
                 mutate(child, n)
             next_gen.append(child)
-            
+
+
+
 
         if strategy == 'darwinian':
             population = local_optimization(population, n)  # Optimize population if Darwinian
-        
+
         fitnesses = [fitness(ind, n) for ind in population]
         # if lamarckian, optimize. pop = optimize()
         # anyway create new population
@@ -255,6 +257,8 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
             #
 
             #try different aproach, change mutation rate
+
+            #try different approach, change mutation rate
             #print("Resetting population due to stagnation")
             population = [create_individual(n) for _ in range(population_size)]
             #mutation_rate = mutation_rate + 0.05  # Increase mutation rate
@@ -292,7 +296,6 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
     'gen_found': gen_found,
     'best_gen1': best_gen1_solution
 }
-
 
 
 # Run the genetic algorithm with a given N
