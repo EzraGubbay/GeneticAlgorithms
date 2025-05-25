@@ -5,6 +5,9 @@ import numpy as np
 def magic_constant(n):
     return n * (n**2 + 1) // 2
 
+def perfect_constant(n):
+    return n ** 2 + 1
+
 # Convert a flat list of n^2 numbers into an n x n matrix
 def to_matrix(individual, n):
     return np.array(individual).reshape((n, n))
@@ -24,15 +27,35 @@ def is_valid_magic_square(square, n):
     return True
 
 # Evaluate how "good" a given individual is by computing its penalty (lower is better)
-def fitness(individual, n):
+def fitness(individual, n, is_perfect=False):
     mtx = to_matrix(individual, n)         # Convert to matrix
     target = magic_constant(n)             # Expected sum for rows/columns/diagonals
+    perfect_target = perfect_constant(n)   # Expected sum for all 2x2 subsquares.
     penalty = 0                            # Initialize penalty score
 
     # Penalize deviations from the target sum in rows and columns
     for i in range(n):
         penalty += abs(np.sum(mtx[i, :]) - target)    # Row i
         penalty += abs(np.sum(mtx[:, i]) - target)    # Column i
+
+    # Penalize deviations from the required sum for 2x2 sub-squares.
+    # Also penalize deviations from required sum for complementary pairs.
+    if is_perfect:
+        for i in range(n - 1):
+            for j in range(1, n):
+                subsquare = (
+                    mtx[i, j - 1] +
+                    mtx[i + 1, j - 1] +
+                    mtx[i, j] +
+                    mtx[i + 1, j ]
+                )
+
+                penalty += abs(np.sum(subsquare) - 2 * perfect_target)
+
+        half = n // 2
+        for i in range(n):
+            for j in range(n):
+                penalty = abs(mtx[i,j] + mtx[(i + half) % n, (j + half) % n] - perfect_target)
 
     # Penalize deviations in both diagonals
     penalty += abs(np.sum(np.diag(mtx)) - target)             # Main diagonal
@@ -65,6 +88,7 @@ def mutate(individual, n):
 
 # Perform crossover between two parents using Order Crossover (OX)
 def crossover(parent1, parent2):
+
     size = len(parent1)
     start, end = sorted(random.sample(range(size), 2))
     child = [None] * size
@@ -149,10 +173,9 @@ def genetic_algorithm(n, population_size=100, generations=1000, stagnation_limit
                 'best_scores': best_scores,
                 'avg_scores': avg_scores,
                 'eval_calls': eval_calls,
-                'gen_found': gen,
+                'gen_found': gen_found,
                 'best_gen1': best_gen1_solution
             }
-            break
 
         # Print progress every 100 generations
         if gen % 100 == 0:
@@ -196,7 +219,7 @@ def genetic_algorithm(n, population_size=100, generations=1000, stagnation_limit
         population = next_gen  # Move to next generation
 
       # Return best solution and its (positive) score
-    return {
+    yield {
     'generation': generations,
     'best_solution': best_solution,
     'best_score': -best_score,
@@ -213,7 +236,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     N = 4
-    print(f"\n🎯 Running genetic algorithm for N = {N}...\n")
+    print(f"\nRunning genetic algorithm for N = {N}...\n")
 
     result_gen = genetic_algorithm(N)
     snapshots = []
