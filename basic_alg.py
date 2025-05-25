@@ -86,8 +86,26 @@ def select(population, fitnesses, k=3):
     selected = random.choices(list(zip(population, fitnesses)), k=k)
     return max(selected, key=lambda x: x[1])[0]
 
+
+
+#this is for lamarkian and darwin 
+def local_optimization(individual, n, steps=5):
+    """Performs local optimization by swapping elements to improve fitness."""
+    best = individual.copy()
+    best_score = fitness(best, n)
+
+    for _ in range(steps):
+        i, j = random.sample(range(n * n), 2)
+        candidate = best.copy()
+        candidate[i], candidate[j] = candidate[j], candidate[i]
+        candidate_score = fitness(candidate, n)
+        if candidate_score > best_score:
+            best = candidate
+            best_score = candidate_score
+    return best
+
 # Main genetic algorithm loop
-def genetic_algorithm(n, population_size=100, generations=1000, stagnation_limit=500):
+def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit=500, strategy = 'classic'):
     best_gen1_solution = None
     eval_calls = 0
     best_scores = []
@@ -107,8 +125,33 @@ def genetic_algorithm(n, population_size=100, generations=1000, stagnation_limit
     stagnation_counter = 0
 
     for gen in range(generations):
-        # Evaluate fitness for entire population for statistical data
+        # Evaluate fitness for entire population depending on strategy
+        if strategy == 'lamarckian':
+            population = [local_optimization(ind, n) for ind in population]
+            
+        fitnesses = [fitness(ind, n) for ind in population] #calculate fitness for all cases
+        best_solution = population[fitnesses.index(max(fitnesses))]  # Find the best solution in the current population
+        
+        # Create next generation with elitism: preserve the best individual
+        next_gen = [best_solution.copy()]
+        while len(next_gen) < population_size:
+            p1 = select(population, fitnesses)
+            p2 = select(population, fitnesses)
+            while p1 == p2:
+                p2 = select(population, fitnesses)
+            child = crossover(p1, p2)
+            if random.random() < mutation_rate:
+                mutate(child, n)
+            next_gen.append(child)
+            
+        if strategy == 'darwinian':
+            population = [local_optimization(ind, n) for ind in population]
+        
         fitnesses = [fitness(ind, n) for ind in population]
+        # if lamarckian, optimize. pop = optimize()
+        # anyway create new population
+        # if darwinian, optimize
+        # calculate fitnesses, then set new population
         eval_calls += len(population) # Count evaluations
         
         # Find the best individual in current generation
@@ -178,17 +221,17 @@ def genetic_algorithm(n, population_size=100, generations=1000, stagnation_limit
             stagnation_counter = 0
             continue
 
-       # Create next generation with elitism: preserve the best individual
-        next_gen = [best_solution.copy()]
-        while len(next_gen) < population_size:
-            p1 = select(population, fitnesses)
-            p2 = select(population, fitnesses)
-            while p1 == p2:
-                p2 = select(population, fitnesses)
-            child = crossover(p1, p2)
-            if random.random() < mutation_rate:
-                mutate(child, n)
-            next_gen.append(child)
+    #    # Create next generation with elitism: preserve the best individual
+    #     next_gen = [best_solution.copy()]
+    #     while len(next_gen) < population_size:
+    #         p1 = select(population, fitnesses)
+    #         p2 = select(population, fitnesses)
+    #         while p1 == p2:
+    #             p2 = select(population, fitnesses)
+    #         child = crossover(p1, p2)
+    #         if random.random() < mutation_rate:
+    #             mutate(child, n)
+    #         next_gen.append(child)
         
       
 
