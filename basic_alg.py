@@ -89,20 +89,32 @@ def select(population, fitnesses, k=3):
 
 
 #this is for lamarkian and darwin 
-def local_optimization(individual, n, steps=5):
-    """Performs local optimization by swapping elements to improve fitness."""
-    best = individual.copy()
-    best_score = fitness(best, n)
+def local_optimization(population, n, candidates_per_step=10):
+    total_steps = n
+    new_population = population.copy()
+    population_size = len(population)
 
-    for _ in range(steps):
-        i, j = random.sample(range(n * n), 2)
-        candidate = best.copy()
-        candidate[i], candidate[j] = candidate[j], candidate[i]
-        candidate_score = fitness(candidate, n)
-        if candidate_score > best_score:
-            best = candidate
-            best_score = candidate_score
-    return best
+    for _ in range(total_steps):
+        idx = random.randint(0, population_size - 1)  # Pick a random individual
+        individual = new_population[idx]
+        best = individual.copy()
+        best_score = fitness(best, n)
+
+        candidates = []
+        for _ in range(candidates_per_step):
+            i, j = random.sample(range(n * n), 2)
+            candidate = best.copy()
+            candidate[i], candidate[j] = candidate[j], candidate[i]
+            score = fitness(candidate, n)
+            candidates.append((score, candidate))
+
+        # Choose best candidate
+        candidates.sort(reverse=True, key=lambda x: x[0])
+        if candidates[0][0] > best_score:
+            new_population[idx] = candidates[0][1]  # Only replace if improved
+
+    return new_population
+
 
 # Main genetic algorithm loop
 def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit=500, strategy = 'classic'):
@@ -112,7 +124,8 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
     avg_scores = []
     gen_found = None
 
-   
+    
+    
     mutation_rate = 0.2 # Probability of mutation
     # Create initial random population
     population = []
@@ -127,13 +140,21 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
     for gen in range(generations):
         # Evaluate fitness for entire population depending on strategy
         if strategy == 'lamarckian':
-            population = [local_optimization(ind, n) for ind in population]
+            population = local_optimization(population, n)  # Optimize population if Lamarckian
             
         fitnesses = [fitness(ind, n) for ind in population] #calculate fitness for all cases
         best_solution = population[fitnesses.index(max(fitnesses))]  # Find the best solution in the current population
         
         # Create next generation with elitism: preserve the best individual
         next_gen = [best_solution.copy()]
+        # counterTrueMutaion = 0
+        # if increased_mutation == True:
+        #     mutation_rate = 0.5 # Higher mutation rate for more exploration
+        #     counterTrueMutaion+=1
+        #     print("Mutation rate increased to 0.5 for generation: " + str(counterTrueMutaion))
+        # if counterTrueMutaion == 5:
+        #         increased_mutation = False
+        #         counterTrueMutaion = 0  # Reset counter after 5 generations
         while len(next_gen) < population_size:
             p1 = select(population, fitnesses)
             p2 = select(population, fitnesses)
@@ -144,8 +165,9 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
                 mutate(child, n)
             next_gen.append(child)
             
+            
         if strategy == 'darwinian':
-            population = [local_optimization(ind, n) for ind in population]
+            population = local_optimization(population, n)  # Optimize population if Darwinian
         
         fitnesses = [fitness(ind, n) for ind in population]
         # if lamarckian, optimize. pop = optimize()
@@ -169,10 +191,12 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
         if gen_best_score == 0 and gen_found is None:
             gen_found = gen  # Record when perfect solution was found
         # Update best-ever solution
+        
         if gen_best_score > best_score:
             best_score = gen_best_score
             best_solution = gen_best_individual
             stagnation_counter = 0  # Reset stagnation counter
+            gen_found = gen
         else:
             stagnation_counter += 1
 
@@ -217,9 +241,17 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
         # If there's no improvement for many generations, reset the population
         if stagnation_counter >= stagnation_limit:
             print(f"Resetting population due to stagnation at generation {gen}")
+            #
+            
+            #try different aproach, change mutation rate
+            #print("Resetting population due to stagnation")
             population = [create_individual(n) for _ in range(population_size)]
+            #mutation_rate = mutation_rate + 0.05  # Increase mutation rate
             stagnation_counter = 0
+            #increased_mutation = True  # Set flag to increase mutation rate
             continue
+        
+        
 
     #    # Create next generation with elitism: preserve the best individual
     #     next_gen = [best_solution.copy()]
@@ -251,11 +283,12 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
 }
 
 
+
 # Run the genetic algorithm with a given N
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    N = 4
+    N = 5
     print(f"\n🎯 Running genetic algorithm for N = {N}...\n")
 
     result_gen = genetic_algorithm(N)
