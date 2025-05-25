@@ -1,9 +1,39 @@
 import threading
-import time
+import tkinter
+
+from basic_alg import genetic_algorithm
 import customtkinter as ctk
 from tkinter import ttk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+
+def draw_square(dimension, matrix, master):
+    cell_size = 300 // dimension
+
+    for i in range(dimension):
+        for j in range(dimension):
+            cell = ctk.CTkFrame(
+                master,
+                width=cell_size,
+                height=cell_size,
+                fg_color=("#000000", "#000000"),
+                corner_radius=0,
+                border_width=10
+            )
+            cell.grid(row=i, column=j, sticky="n")
+
+            num = matrix[i * dimension + j]
+            lbl = ctk.CTkLabel(
+                cell,
+                text=str(num),
+                text_color="white",
+                fg_color="gray30",
+                font=("Arial", 16),
+                width=cell_size,
+                height=cell_size
+            )
+            lbl.pack(fill="both", expand=True, padx=1, pady=1)
 
 class GAApp(ctk.CTk):
     def __init__(self):
@@ -36,7 +66,7 @@ class GAApp(ctk.CTk):
         dimension_label.grid(row=1, column=0, padx=(0, 10), pady=20, sticky="w")
 
         dimension_entry = ctk.CTkEntry(container, width=120, font=global_font)
-        dimension_entry.insert(0, '3')
+        dimension_entry.insert(0, '5')
         setattr(self, f"entry_{'N:'.strip(':').lower().replace(' ', '_')}", dimension_entry)
         dimension_entry.grid(row=1, column=1, pady=20, sticky="w")
 
@@ -44,147 +74,138 @@ class GAApp(ctk.CTk):
         max_gen_label.grid(row=2, column=0, padx=(0, 10), pady=20, sticky="w")
 
         max_gen_entry = ctk.CTkEntry(container, width=120, font=global_font)
-        max_gen_entry.insert(0, '1000')
+        max_gen_entry.insert(0, '5000')
         setattr(self, f"entry_{'Max Generations:'.strip(':').lower().replace(' ', '_')}", max_gen_entry)
         max_gen_entry.grid(row=2, column=1, pady=20, sticky="w")
 
         res_type_label = ctk.CTkLabel(container, text="Result Type:", font=global_font)
         res_type_label.grid(row=3, column=0, padx=(0, 10), pady=20, sticky="w")
 
-        res_type_entry = ctk.CTkComboBox(container, values=["regular", "perfect"], width=140, font=global_font)
+        res_type_entry = ctk.CTkComboBox(container, values=["Regular", "Perfect"], width=140, font=global_font)
         res_type_entry.set("regular")
         self.combo_type = res_type_entry
         res_type_entry.grid(row=3, column=1, pady=20, sticky="w")
 
+        optimization_method = tkinter.StringVar(value="classic")
+
+        optimize_type_label = ctk.CTkLabel(container, text="Optimization Type:", font=global_font)
+        optimize_type_label.grid(row=4, column=0, padx=(0, 10), pady=20, sticky="w")
+
+        classic_radio = ctk.CTkRadioButton(container, text="None", value="classic", variable=optimization_method)
+        lamarck_radio = ctk.CTkRadioButton(container, text="Lamarck", value="lamarck", variable=optimization_method)
+        darwin_radio = ctk.CTkRadioButton(container, text="Darwin", value="darwin", variable=optimization_method)
+
+        classic_radio.grid(row=4, column=1, padx=(10, 10), pady=25, sticky="w")
+        lamarck_radio.grid(row=4, column=1, padx=(110, 10), pady=25, sticky="w")
+        darwin_radio.grid(row=4, column=1, padx=(220, 10), pady=25, sticky="w")
+
         # Start button - sends parameters to game screen and initiates GA.
-        start_button = ctk.CTkButton(container, text="Start", font=global_font, command=self._on_start, height=50)
-        start_button.grid(row=4, column=0, columnspan=2, pady=(30,0))
-
-    def _on_start(self):
-        self.menu_frame.pack_forget()
-        self._create_gameplay_screen()
-
-        # # TODO: place thread call in gameplay screen.
-        # threading.Thread(target=self._run_ga, daemon=True).start()
+        start_button = ctk.CTkButton(
+            container,
+            text="Start",
+            font=global_font,
+            height=50,
+            command=lambda: self.create_gameplay_screen(
+                int(dimension_entry.get()),
+                int(max_gen_entry.get()),
+                res_type_entry.get(),
+                optimization_method.get()
+            )
+        )
+        start_button.grid(row=6, column=0, columnspan=2, pady=(30,0))
 
     # TODO: should start ga calculation from basic_alg.py.
     # TODO: display loading... while ga is working. Display initial configs(?).
     # TODO: Display end result + initial best (?) and graphs and stats below.
-    def _create_gameplay_screen(self):
-        self.play_frame = ctk.CTkFrame(self)
-        self.play_frame.pack(fill="both", expand=True)
+    def create_gameplay_screen(self, n: int, generations: int, result_type: str="regular", optimization_method="classic"):
 
-        self.initial_stats_frame = ctk.CTkFrame(self.play_frame, fg_color="transparent")
-        self.initial_stats_frame.grid(row=0, column=0, padx=(200,50), pady=20, sticky="nw")
+        # Remove main menu
+        self.menu_frame.pack_forget()
 
-        self.final_stats_frame = ctk.CTkFrame(self.play_frame, fg_color="transparent")
-        self.final_stats_frame.grid(row=0, column=1, padx=(50, 200), pady=20, sticky="ne")
+        play_frame = ctk.CTkFrame(self)
+        play_frame.pack(fill="both", expand=True)
 
-        self.initial_square_frame = ctk.CTkFrame(self.initial_stats_frame, fg_color="transparent")
-        self.initial_square_frame.pack(padx=20, pady=20, anchor="w")
+        initial_stats_frame = ctk.CTkFrame(play_frame, fg_color="transparent")
+        initial_stats_frame.grid(row=0, column=0, padx=(200,50), pady=20, sticky="nw")
 
-        size = 5
-        cell_size = 60
+        final_stats_frame = ctk.CTkFrame(play_frame, fg_color="transparent")
+        final_stats_frame.grid(row=0, column=1, padx=(50, 200), pady=20, sticky="ne")
 
-        for i in range(size):
-            for j in range(size):
+        results = genetic_algorithm(n=n, generations=generations)
+        first_generation = next(results)
+        print(first_generation['best_gen1'])
 
-                cell = ctk.CTkFrame(
-                    self.initial_square_frame,
-                    width=cell_size,
-                    height=cell_size,
-                    fg_color=("#000000", "#000000"),
-                    corner_radius=0,
-                    border_width=10
-                )
-                cell.grid(row=i, column=j, sticky="n")
+        initial_square_frame = ctk.CTkFrame(initial_stats_frame, fg_color="transparent")
+        initial_square_frame.pack(padx=20, pady=20, anchor="w")
 
-                num = i * size + j + 1
-                lbl = ctk.CTkLabel(
-                    cell,
-                    text=str(num),
-                    text_color="white",
-                    fg_color="gray30",
-                    font=("Arial", 16),
-                    width=cell_size,
-                    height=cell_size
-                )
-                lbl.pack(fill="both", expand=True, padx=1, pady=1)
+        draw_square(n, first_generation['best_gen1'], initial_square_frame)
 
-        self.final_square_frame = ctk.CTkFrame(self.final_stats_frame, fg_color="transparent")
-        self.final_square_frame.pack(fill="both", expand=True, padx=20, pady=20, anchor="e")
+        final_square_frame = ctk.CTkFrame(final_stats_frame, fg_color="transparent")
+        final_square_frame.pack(fill="both", expand=True, padx=20, pady=20, anchor="e")
 
-        size = 5
-        cell_size = 60
+        draw_square(n, first_generation['best_gen1'], final_square_frame)
 
-        for i in range(size):
-            for j in range(size):
-                cell = ctk.CTkFrame(
-                    self.final_square_frame,
-                    width=cell_size,
-                    height=cell_size,
-                    fg_color=("#000000", "#000000"),
-                    corner_radius=0,
-                    border_width=10
-                )
-                cell.grid(row=i, column=j, sticky="n")
-
-                num = i * size + j + 1
-                lbl = ctk.CTkLabel(
-                    cell,
-                    text=str(num),
-                    text_color="white",
-                    fg_color="gray30",
-                    font=("Arial", 16),
-                    width=cell_size,
-                    height=cell_size
-                )
-                lbl.pack(fill="both", expand=True, padx=1, pady=1)
-
-        self.initial_stats_label = ctk.CTkLabel(
-            self.initial_stats_frame,
+        initial_stats_label = ctk.CTkLabel(
+            initial_stats_frame,
             text="Initial Stats",
             anchor="center",
             font=("Verdana-Bold", 24)
         )
-        self.initial_stats_label.pack(padx=100, pady=6, anchor="w")
+        initial_stats_label.pack(padx=100, pady=6, anchor="w")
 
-        self.final_stats_label = ctk.CTkLabel(
-            self.final_stats_frame,
+        final_stats_label = ctk.CTkLabel(
+            final_stats_frame,
             text="Final Stats",
             anchor="center",
             font=("Verdana-Bold", 24)
         )
-        self.final_stats_label.pack(padx=100, pady=6, anchor="w")
+        final_stats_label.pack(padx=100, pady=6, anchor="w")
 
-        self.initial_fitness_max_label = ctk.CTkLabel(
-            self.initial_stats_frame,
-            text="Max Fitness: 10 (demo)",
+        initial_fitness_max_label = ctk.CTkLabel(
+            initial_stats_frame,
+            text=f"Best Fitness Score: {first_generation['best_score']}",
             anchor="center", font=global_font
         )
-        self.initial_fitness_max_label.pack(padx=30, pady=6, anchor="w")
+        initial_fitness_max_label.pack(padx=30, pady=6, anchor="w")
 
-        self.initial_fitness_min_label = ctk.CTkLabel(
-            self.initial_stats_frame,
-            text="Min Fitness: 2 (demo)",
+        initial_fitness_min_label = ctk.CTkLabel(
+            initial_stats_frame,
+            text="Worst Fitness Score: 2 (demo)",
             anchor="center", font=global_font
         )
-        self.initial_fitness_min_label.pack(padx=30, pady=6, anchor="w")
+        initial_fitness_min_label.pack(padx=30, pady=6, anchor="w")
 
-        self.final_fitness_best_label = ctk.CTkLabel(
-            self.final_stats_frame,
-            text="Best Fitness: 100 (demo)",
+        final_fitness_best_label = ctk.CTkLabel(
+            final_stats_frame,
+            text=f"Best Fitness Score: {first_generation['best_score']}",
             anchor="center", font=global_font
         )
-        self.final_fitness_best_label.pack(padx=30, pady=6, anchor="w")
+        final_fitness_best_label.pack(padx=30, pady=6, anchor="w")
 
-        self.final_fitness_min_label = ctk.CTkLabel(
-            self.final_stats_frame,
-            text="Min Fitness: 43 (demo)",
+        final_fitness_min_label = ctk.CTkLabel(
+            final_stats_frame,
+            text="Worst Fitness Score: 43 (demo)",
             anchor="center", font=global_font
         )
-        self.final_fitness_min_label.pack(padx=30, pady=6, anchor="w")
+        final_fitness_min_label.pack(padx=30, pady=6, anchor="w")
 
+        meta_stats_frame = ctk.CTkFrame(play_frame, fg_color="transparent")
+        meta_stats_frame.grid(row=1, column=0, columnspan=2, padx=(50,50), pady=20, sticky="nw")
+
+        meta_stats_label = ctk.CTkLabel(meta_stats_frame, text="Meta Stats", anchor="center", font=global_font)
+        meta_stats_label.pack(padx=100, pady=6, anchor="w")
+
+        self.update()
+
+        for checkpoint in results:
+
+            for child in final_square_frame.winfo_children():
+                child.destroy()
+            draw_square(n, checkpoint['best_solution'], final_square_frame)
+
+            final_fitness_best_label.text = f'Best Fitness Score: {checkpoint["best_score"]}'
+
+            self.update()
 
 title_font = ("Helvetica", 36)
 global_font = ("Verdana", 24)
