@@ -40,7 +40,7 @@ def fitness(individual, n):
 
     # Penalize deviations from the required sum for 2x2 sub-squares.
     # Also penalize deviations from required sum for complementary pairs.
-    if is_perfect:
+    if IS_PERFECT:
         for i in range(n - 1):
             for j in range(1, n):
                 subsquare = (
@@ -110,35 +110,78 @@ def select(population, fitnesses, k=3):
     selected = random.choices(list(zip(population, fitnesses)), k=k)
     return max(selected, key=lambda x: x[1])[0]
 
+def find_min_row(individual, n):
+    min_value = sum(individual[0])
+    index = 0
+    for i in range(1, n):
+        if sum(individual[i]) < min_value:
+            min_value = sum(individual[i])
+            index = i
+    return index
 
+def find_max_row(individual, n):
+    max_value = 0
+    index = 0
+    for i in range(n):
+        if sum(individual[i]) > max_value:
+            max_value = sum(individual[i])
+            index = i
+    return index
 
-#this is for lamarkian and darwin 
-def local_optimization(individual, n, steps=5):
-    """Performs local optimization by swapping elements to improve fitness."""
-    best = individual.copy()
-    best_score = fitness(best, n)
+#this is for lamarkian and darwin
+def local_optimization(population, n):
+    total_steps = n
+    new_population = population.copy()
+    population_size = len(population)
 
-    for _ in range(steps):
-        i, j = random.sample(range(n * n), 2)
-        candidate = best.copy()
-        candidate[i], candidate[j] = candidate[j], candidate[i]
-        candidate_score = fitness(candidate, n)
-        if candidate_score > best_score:
-            best = candidate
-            best_score = candidate_score
-    return best
+    for _ in range(total_steps):
+        idx = random.randint(0, population_size - 1)  # Pick a random individual
+        individual = new_population[idx]
+        best = individual.copy()
+        mtx = to_matrix(best, n)
+        best_score = fitness(best, n)
+
+        min_row = find_min_row(mtx, n)
+        max_row = find_max_row(mtx, n)
+
+        min_num = mtx[min_row].argmin()
+        max_num = mtx[max_row].argmax()
+
+        mtx[min_row, min_num], mtx[max_row, max_num] = mtx[max_row, max_num], mtx[min_row, min_num]
+
+        best = mtx.flatten()
+
+        if best_score < fitness(best, n):
+            new_population[idx] = best
+
+        # candidates = []
+        # for _ in range(candidates_per_step):
+        #     i, j = random.sample(range(n * n), 2)
+        #     candidate = best.copy()
+        #     candidate[i], candidate[j] = candidate[j], candidate[i]
+        #     score = fitness(candidate, n)
+        #     candidates.append((score, candidate))
+
+        # # Choose best candidate
+        # candidates.sort(reverse=True, key=lambda x: x[0])
+        # if candidates[0][0] > best_score:
+        #     new_population[idx] = candidates[0][1]  # Only replace if improved
+
+    return new_population
+
 
 # Main genetic algorithm loop
-def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit=500, strategy = 'classic'):
+def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit=500, strategy = 'classic', mutation_rate=0.2, is_perfect=False):
+    global IS_PERFECT
+
     best_gen1_solution = None
     eval_calls = 0
     best_scores = []
     avg_scores = []
     gen_found = None
+    IS_PERFECT = is_perfect
 
-
-
-    mutation_rate = 0.2 # Probability of mutation
+    mutation_rate = mutation_rate # Probability of mutation
     # Create initial random population
     population = []
     for i in range(population_size):
@@ -159,18 +202,11 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
 
         # Create next generation with elitism: preserve the best individual
         next_gen = [best_solution.copy()]
-        # counterTrueMutaion = 0
-        # if increased_mutation == True:
-        #     mutation_rate = 0.5 # Higher mutation rate for more exploration
-        #     counterTrueMutaion+=1
-        #     print("Mutation rate increased to 0.5 for generation: " + str(counterTrueMutaion))
-        # if counterTrueMutaion == 5:
-        #         increased_mutation = False
-        #         counterTrueMutaion = 0  # Reset counter after 5 generations
+
         while len(next_gen) < population_size:
             p1 = select(population, fitnesses)
             p2 = select(population, fitnesses)
-            while p1 == p2:
+            while p1 is p2:
                 p2 = select(population, fitnesses)
             child = crossover(p1, p2)
             if random.random() < mutation_rate:
@@ -178,16 +214,11 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
             next_gen.append(child)
 
 
-
-
         if strategy == 'darwinian':
             population = local_optimization(population, n)  # Optimize population if Darwinian
 
         fitnesses = [fitness(ind, n) for ind in population]
-        # if lamarckian, optimize. pop = optimize()
-        # anyway create new population
-        # if darwinian, optimize
-        # calculate fitnesses, then set new population
+
         eval_calls += len(population) # Count evaluations
         
         # Find the best individual in current generation
@@ -216,12 +247,6 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
 
         # Stop early if perfect solution is found
         if best_score == 0 and is_valid_magic_square(best_solution, n):
-            # print(f"✅ Valid magic square found at generation {gen} this printing from function")
-            # #print the square
-            # print(to_matrix(best_solution, n))
-            # #print the correct statistics
-            # print(f"Final Score: {-best_score}")
-            # print(f"Final Evaluation Calls: {eval_calls}")
             
             return {
                 'generation': gen,
@@ -230,7 +255,7 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
                 'best_scores': best_scores,
                 'avg_scores': avg_scores,
                 'eval_calls': eval_calls,
-                'gen_found': gen_found,
+                'gen_found': gen,
                 'best_gen1': best_gen1_solution
             }
 
@@ -256,8 +281,6 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
             print(f"Resetting population due to stagnation at generation {gen}")
             #
 
-            #try different aproach, change mutation rate
-
             #try different approach, change mutation rate
             #print("Resetting population due to stagnation")
             population = [create_individual(n) for _ in range(population_size)]
@@ -265,23 +288,6 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
             stagnation_counter = 0
             #increased_mutation = True  # Set flag to increase mutation rate
             continue
-
-
-
-    #    # Create next generation with elitism: preserve the best individual
-    #     next_gen = [best_solution.copy()]
-    #     while len(next_gen) < population_size:
-    #         p1 = select(population, fitnesses)
-    #         p2 = select(population, fitnesses)
-    #         while p1 == p2:
-    #             p2 = select(population, fitnesses)
-    #         child = crossover(p1, p2)
-    #         if random.random() < mutation_rate:
-    #             mutate(child, n)
-    #         next_gen.append(child)
-        
-      
-
 
         population = next_gen  # Move to next generation
 
@@ -297,6 +303,8 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
     'best_gen1': best_gen1_solution
 }
 
+# Global parameters
+IS_PERFECT = False
 
 # Run the genetic algorithm with a given N
 if __name__ == "__main__":

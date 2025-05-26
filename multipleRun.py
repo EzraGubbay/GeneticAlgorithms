@@ -18,8 +18,8 @@ def is_valid_magic_square(square, n):
 
 def run_multiple_tests():
     runs = 10
-    sizes = list(range(3, 6))  # N=3 to 5
-    algorithms = ["classic", "darwinian", "lamarckian"]
+    sizes = list(range(4, 6))  # N=3 to 5
+    algorithms = ["darwinian", "lamarckian", "classic"]
 
     success_rates = {alg: {} for alg in algorithms}
     avg_eval_calls = {alg: {} for alg in algorithms}
