@@ -186,6 +186,34 @@ def find_2_max_in_row(row, n):
     return max1index, max2index
 
 #this is for lamarkian and darwinian strategies
+
+#OPTIMIZATION WITH RANDOM SELECTION
+# def local_optimization(population, n):
+#     total_steps = n
+#     new_population = population.copy()
+#     population_size = len(population)
+
+#     for _ in range(total_steps):
+#         idx = random.randint(0, population_size - 1)  # Pick a random individual
+#         individual = new_population[idx]
+#         best = individual.copy()
+#         mtx = to_matrix(best, n)
+#         best_score = fitness(best, n)
+
+#         min_row = find_min_row(mtx, n)
+#         max_row = find_max_row(mtx, n)
+
+#         min_num = mtx[min_row].argmin()
+#         max_num = mtx[max_row].argmax()
+
+#         mtx[min_row, min_num], mtx[max_row, max_num] = mtx[max_row, max_num], mtx[min_row, min_num]
+
+#         best = mtx.flatten()
+
+#         if best_score < fitness(best, n):
+#             new_population[idx] = best
+
+
 # OPTIMIZATION WITH 2 CHANGES IN THE SAME ROWS
 # def local_optimization(population, n):
 #     new_population = []
