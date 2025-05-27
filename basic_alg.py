@@ -128,46 +128,150 @@ def find_max_row(individual, n):
             index = i
     return index
 
-#this is for lamarkian and darwin
+def find_2nd_max_row(individual, n):
+    max_row_index = find_max_row(individual, n)
+    max_value = sum(individual[max_row_index])
+    second_max_index = -1
+    second_max_value = 0
+    for i in range(n):
+        if i != max_row_index and sum(individual[i]) > second_max_value:
+            second_max_value = sum(individual[i])
+            second_max_index = i
+    return second_max_index
+
+def find_2nd_min_row(individual, n):
+    min_row_index = find_min_row(individual, n)
+    min_value = sum(individual[min_row_index])
+    second_min_index = -1
+    second_min_value = sum(individual[find_max_row(individual, n)]) # Set to a value larger than any possible sum
+    for i in range(n):
+        if i != min_row_index and sum(individual[i]) < second_min_value:
+            second_min_value = sum(individual[i])
+            second_min_index = i
+    return second_min_index
+        
+
+#this function gets a row and returns the two minimum indexes in that row
+def find_2_min_in_row(row, n):
+    row = row.tolist()  # Convert to list if it's a numpy array
+    min1 = min(row)
+    min1index = row.index(min1)
+
+    min2 = n * n + 2  # Set to a value larger than any possible element in the row
+    min2index = -1
+
+    for i in range(n):
+        if i != min1index and row[i] < min2:
+            min2 = row[i]
+            min2index = i
+
+    return min1index, min2index
+
+    
+
+#this function gets a row and returns the two maximum indexes in that row
+def find_2_max_in_row(row, n):
+    row = row.tolist()  # Convert to list if it's a numpy array
+    max1 = max(row)
+    max1index = row.index(max1)
+
+    max2 = 0
+    max2index = -1
+
+    for i in range(n):
+        if i != max1index and row[i] > max2:
+            max2 = row[i]
+            max2index = i
+
+    return max1index, max2index
+
+#this is for lamarkian and darwinian strategies
+# OPTIMIZATION WITH 2 CHANGES IN THE SAME ROWS
+# def local_optimization(population, n):
+#     new_population = []
+#     for individual in population:
+#         current = individual.copy()
+#         mtx = to_matrix(current, n)
+#         best_score = fitness(current, n)
+
+#         min_row = find_min_row(mtx, n)
+#         max_row = find_max_row(mtx, n)
+
+#         min_num1, min_num2 = find_2_min_in_row(mtx[min_row], n)
+#         max_num1, max_num2 = find_2_max_in_row(mtx[max_row], n)
+
+#         #make the changes (in vice versa - min 1 with max 2, min 2 with max 1)
+#         mtx[min_row, min_num1], mtx[max_row, max_num2] = mtx[max_row, max_num2], mtx[min_row, min_num1]
+#         mtx[min_row, min_num2], mtx[max_row, max_num1] = mtx[max_row, max_num1], mtx[min_row, min_num2]
+        
+
+#         improved = mtx.flatten()
+
+#         if fitness(improved, n) > best_score:
+#             new_population.append(improved)
+#         else:
+#             new_population.append(current)  
+#     return new_population
+
+# OPTIMIZATION WITH 2 CHANGES IN DIFFERENT ROWS
 def local_optimization(population, n):
-    total_steps = n
-    new_population = population.copy()
-    population_size = len(population)
+    new_population = []
+    for individual in population:
+        current = individual.copy()
+        mtx = to_matrix(current, n)
+        best_score = fitness(current, n)
 
-    for _ in range(total_steps):
-        idx = random.randint(0, population_size - 1)  # Pick a random individual
-        individual = new_population[idx]
-        best = individual.copy()
-        mtx = to_matrix(best, n)
-        best_score = fitness(best, n)
+        min_row1 = find_min_row(mtx, n)
+        max_row1 = find_max_row(mtx, n)
+        min_row2 = find_2nd_min_row(mtx, n)
+        max_row2 = find_2nd_max_row(mtx, n)
+        
+        
+        min_num1 = mtx[min_row1].argmin()
+        min_num2 = mtx[min_row2].argmin()
+        max_num1 = mtx[max_row1].argmax()
+        max_num2 = mtx[max_row2].argmax()
+        
+        
 
-        min_row = find_min_row(mtx, n)
-        max_row = find_max_row(mtx, n)
+      
+        mtx[min_row1, min_num1], mtx[max_row2, max_num2] = mtx[max_row2, max_num2], mtx[min_row1, min_num1]
+        mtx[min_row2, min_num2], mtx[max_row1, max_num1] = mtx[max_row1, max_num1], mtx[min_row2, min_num2]
 
-        min_num = mtx[min_row].argmin()
-        max_num = mtx[max_row].argmax()
+        improved = mtx.flatten()
 
-        mtx[min_row, min_num], mtx[max_row, max_num] = mtx[max_row, max_num], mtx[min_row, min_num]
-
-        best = mtx.flatten()
-
-        if best_score < fitness(best, n):
-            new_population[idx] = best
-
-        # candidates = []
-        # for _ in range(candidates_per_step):
-        #     i, j = random.sample(range(n * n), 2)
-        #     candidate = best.copy()
-        #     candidate[i], candidate[j] = candidate[j], candidate[i]
-        #     score = fitness(candidate, n)
-        #     candidates.append((score, candidate))
-
-        # # Choose best candidate
-        # candidates.sort(reverse=True, key=lambda x: x[0])
-        # if candidates[0][0] > best_score:
-        #     new_population[idx] = candidates[0][1]  # Only replace if improved
-
+        if fitness(improved, n) > best_score:
+            new_population.append(improved)
+        else:
+            new_population.append(current)  
     return new_population
+
+    
+# OPTIMIZATION WITH 1 CHANGE
+# def local_optimization(population, n):
+#     new_population = []
+    
+#     for individual in population:
+#         current = individual.copy()
+#         mtx = to_matrix(current, n)
+#         best_score = fitness(current, n)
+
+#         min_row = find_min_row(mtx, n)
+#         max_row = find_max_row(mtx, n)
+
+#         min_num = mtx[min_row].argmin()
+#         max_num = mtx[max_row].argmax()
+
+#         mtx[min_row, min_num], mtx[max_row, max_num] = mtx[max_row, max_num], mtx[min_row, min_num]
+
+#         improved = mtx.flatten()
+
+#         if fitness(improved, n) > best_score:
+#             new_population.append(improved)
+#         else:
+#             new_population.append(current)  
+#     return new_population
+
 
 
 # Main genetic algorithm loop
