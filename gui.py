@@ -4,6 +4,9 @@ import tkinter
 from basic_alg import genetic_algorithm
 import customtkinter as ctk
 from tkinter import ttk
+import numpy as np
+import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -39,7 +42,7 @@ class GAApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("GA Evolution GUI")
-        self.geometry("1200x800")
+        self.geometry("1200x950")
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
@@ -66,7 +69,7 @@ class GAApp(ctk.CTk):
         dimension_label.grid(row=1, column=0, padx=(0, 10), pady=20, sticky="w")
 
         dimension_entry = ctk.CTkEntry(container, width=120, font=global_font)
-        dimension_entry.insert(0, '5')
+        dimension_entry.insert(0, '4')
         setattr(self, f"entry_{'N:'.strip(':').lower().replace(' ', '_')}", dimension_entry)
         dimension_entry.grid(row=1, column=1, pady=20, sticky="w")
 
@@ -145,35 +148,12 @@ class GAApp(ctk.CTk):
 
         draw_square(n, first_generation['best_gen1'], final_square_frame)
 
-        initial_stats_label = ctk.CTkLabel(
-            initial_stats_frame,
-            text="Initial Stats",
-            anchor="center",
-            font=("Verdana-Bold", 24)
-        )
-        initial_stats_label.pack(padx=100, pady=6, anchor="w")
-
-        final_stats_label = ctk.CTkLabel(
-            final_stats_frame,
-            text="Final Stats",
-            anchor="center",
-            font=("Verdana-Bold", 24)
-        )
-        final_stats_label.pack(padx=100, pady=6, anchor="w")
-
         initial_fitness_max_label = ctk.CTkLabel(
             initial_stats_frame,
             text=f"Best Fitness Score: {first_generation['best_score']}",
             anchor="center", font=global_font
         )
         initial_fitness_max_label.pack(padx=30, pady=6, anchor="w")
-
-        initial_fitness_min_label = ctk.CTkLabel(
-            initial_stats_frame,
-            text="Worst Fitness Score: 2 (demo)",
-            anchor="center", font=global_font
-        )
-        initial_fitness_min_label.pack(padx=30, pady=6, anchor="w")
 
         final_fitness_best_label = ctk.CTkLabel(
             final_stats_frame,
@@ -182,33 +162,136 @@ class GAApp(ctk.CTk):
         )
         final_fitness_best_label.pack(padx=30, pady=6, anchor="w")
 
-        final_fitness_min_label = ctk.CTkLabel(
-            final_stats_frame,
-            text="Worst Fitness Score: 43 (demo)",
-            anchor="center", font=global_font
-        )
-        final_fitness_min_label.pack(padx=30, pady=6, anchor="w")
-
         meta_stats_frame = ctk.CTkFrame(play_frame, fg_color="transparent")
         meta_stats_frame.grid(row=1, column=0, columnspan=2, padx=(50,50), pady=20, sticky="nw")
 
         meta_stats_label = ctk.CTkLabel(meta_stats_frame, text="Meta Stats", anchor="center", font=global_font)
         meta_stats_label.pack(padx=100, pady=6, anchor="w")
 
+        # Create frames for stats and graphs
+        stats_container = ctk.CTkFrame(meta_stats_frame, fg_color="transparent")
+        stats_container.pack(fill="x", padx=20, pady=10)
+
+        graphs_container = ctk.CTkFrame(meta_stats_frame, fg_color="transparent")
+        graphs_container.pack(fill="x", padx=20, pady=10)
+
+        # Initialize data collection
+        self.generation_data = {
+            'generation': [],
+            'best_scores': [],
+            'avg_scores': [],
+            'eval_calls': []
+        }
+
+        # Create stats labels
+        self.avg_best_score_label = ctk.CTkLabel(
+            stats_container,
+            text="Average Best Score: --",
+            anchor="w",
+            font=("Verdana", 16)
+        )
+        self.avg_best_score_label.grid(row = 0, column = 0, padx=20, pady=5, sticky="w")
+
+        self.total_evals_label = ctk.CTkLabel(
+            stats_container,
+            text="Total Evaluations: --",
+            anchor="w",
+            font=("Verdana", 16)
+        )
+        self.total_evals_label.grid(row = 1, column = 0, padx=20, pady=5, sticky="w")
+
+        self.convergence_rate_label = ctk.CTkLabel(
+            stats_container,
+            text="Convergence Rate: --",
+            anchor="w",
+            font=("Verdana", 16)
+        )
+        self.convergence_rate_label.grid(row = 2, column = 0, padx=20, pady=5, sticky="w")
+
+        solution_found_label = ctk.CTkLabel(
+            stats_container,
+            text="Solution Found: --",
+            anchor="w",
+            font=("Verdana", 16)
+        )
+        solution_found_label.grid(row = 0, column = 1, padx=20, pady=5, sticky="w")
+
+        # Create figure for graphs
+        self.fig, (self.ax1, self.ax2) = plt.subplots(1, 2, figsize=(10, 3))
+        self.canvas = FigureCanvasTkAgg(self.fig, master=graphs_container)
+        self.canvas.get_tk_widget().pack(fill="both", expand=True)
+
         self.update()
 
         for checkpoint in results:
-
+            # Update square display
             for child in final_square_frame.winfo_children():
                 child.destroy()
             draw_square(n, checkpoint['best_solution'], final_square_frame)
 
-            final_fitness_best_label.text = f'Best Fitness Score: {checkpoint["best_score"]}'
+            # Update fitness label
+            final_fitness_best_label.configure(text=f'Best Fitness Score: {checkpoint["best_score"]}')
+
+            # Collect data for statistics
+            self.generation_data['generation'].append(checkpoint['generation'])
+            self.generation_data['best_scores'].append(checkpoint['best_score'])
+            self.generation_data['avg_scores'].append(checkpoint['avg_scores'])
+            self.generation_data['eval_calls'].append(checkpoint['eval_calls'])
+
+            # Update statistics
+            avg_best = np.mean(self.generation_data['best_scores'])
+            total_evals = checkpoint['eval_calls']
+            convergence_rate = len(set(self.generation_data['best_scores'][-10:])) / 10 if len(
+                self.generation_data['best_scores']) >= 10 else 0
+
+            self.avg_best_score_label.configure(text=f"Average Best Score: {avg_best:.2f}")
+            self.total_evals_label.configure(text=f"Total Evaluations: {total_evals}")
+            self.convergence_rate_label.configure(text=f"Convergence Rate: {convergence_rate:.2f}")
+
+            # Update graphs
+            self.ax1.clear()
+            self.ax2.clear()
+
+            # Create DataFrame with proper numeric values
+            df = pd.DataFrame({
+                'generation': self.generation_data['generation'],
+                'best_scores': self.generation_data['best_scores'],  # Already a single number
+                'avg_scores': [np.mean(scores) for scores in self.generation_data['avg_scores']]
+            })
+
+            # Plot best scores
+            sns.lineplot(data=df, x='generation', y='best_scores', ax=self.ax1)
+            self.ax1.set_title('Best Scores Over Generations')
+            self.ax1.set_xlabel('Generation')
+            self.ax1.set_ylabel('Best Score')
+
+            # Plot average scores
+            sns.lineplot(data=df, x='generation', y='avg_scores', ax=self.ax2)
+            self.ax2.set_title('Average Scores Over Generations')
+            self.ax2.set_xlabel('Generation')
+            self.ax2.set_ylabel('Average Score')
 
             self.update()
 
-title_font = ("Helvetica", 36)
-global_font = ("Verdana", 24)
+            self.fig.tight_layout()
+            self.canvas.draw()
+
+            self.update()
+
+        solution_found_label.configure(
+            text="Solution Found: Yes" if self.generation_data["best_scores"][-1] == 0 else "Solution Found: No"
+        )
+
+        finished_label = ctk.CTkLabel(
+            stats_container,
+            text="Finished!",
+            anchor="w",
+            font=("Verdana", 24)
+        )
+        finished_label.grid(row=1, column=1, padx=20, pady=20, sticky="w")
+
+title_font = ("Helvetica", 18)
+global_font = ("Verdana", 16)
 
 if __name__ == "__main__":
     app = GAApp()
