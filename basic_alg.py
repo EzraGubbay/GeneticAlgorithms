@@ -289,14 +289,13 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
     # Create initial random population
     population = []
     for i in range(population_size):
-        #print("individual:", i)
         population.append(create_individual(n))
 
     best_solution = None
     best_score = float('-inf')
     stagnation_counter = 0
 
-    for gen in range(generations):
+    for gen in range(0, generations):
         # Evaluate fitness for entire population depending on strategy
         if strategy == 'lamarckian':
             population = local_optimization(population, n)  # Optimize population if Lamarckian
