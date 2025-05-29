@@ -12,7 +12,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 def draw_square(dimension, matrix, master):
-    cell_size = 300 // dimension
+    cell_size = 150 // dimension
 
     for i in range(dimension):
         for j in range(dimension):
@@ -32,7 +32,7 @@ def draw_square(dimension, matrix, master):
                 text=str(num),
                 text_color="white",
                 fg_color="gray30",
-                font=("Arial", 16),
+                font=("Arial", 12),
                 width=cell_size,
                 height=cell_size
             )
@@ -42,7 +42,7 @@ class GAApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("GA Evolution GUI")
-        self.geometry("1200x950")
+        self.geometry("1200x800")
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
@@ -129,12 +129,12 @@ class GAApp(ctk.CTk):
         play_frame.pack(fill="both", expand=True)
 
         initial_stats_frame = ctk.CTkFrame(play_frame, fg_color="transparent")
-        initial_stats_frame.grid(row=0, column=0, padx=(200,50), pady=20, sticky="nw")
+        initial_stats_frame.grid(row=0, column=0, padx=(200,50), pady=10, sticky="nw")
 
         final_stats_frame = ctk.CTkFrame(play_frame, fg_color="transparent")
-        final_stats_frame.grid(row=0, column=1, padx=(50, 200), pady=20, sticky="ne")
+        final_stats_frame.grid(row=0, column=1, padx=(50, 200), pady=10, sticky="ne")
 
-        results = genetic_algorithm(n=n, generations=generations)
+        results = genetic_algorithm(n=n, generations=generations, strategy=optimization_method, is_perfect=result_type == "Perfect")
         first_generation = next(results)
         print(first_generation['best_gen1'])
 
@@ -144,7 +144,7 @@ class GAApp(ctk.CTk):
         draw_square(n, first_generation['best_gen1'], initial_square_frame)
 
         final_square_frame = ctk.CTkFrame(final_stats_frame, fg_color="transparent")
-        final_square_frame.pack(fill="both", expand=True, padx=20, pady=20, anchor="e")
+        final_square_frame.pack(fill="both", expand=True, padx=20, pady=10, anchor="e")
 
         draw_square(n, first_generation['best_gen1'], final_square_frame)
 
@@ -163,7 +163,7 @@ class GAApp(ctk.CTk):
         final_fitness_best_label.pack(padx=30, pady=6, anchor="w")
 
         meta_stats_frame = ctk.CTkFrame(play_frame, fg_color="transparent")
-        meta_stats_frame.grid(row=1, column=0, columnspan=2, padx=(50,50), pady=20, sticky="nw")
+        meta_stats_frame.grid(row=1, column=0, columnspan=2, padx=(50,50), pady=10, sticky="nw")
 
         meta_stats_label = ctk.CTkLabel(meta_stats_frame, text="Meta Stats", anchor="center", font=global_font)
         meta_stats_label.pack(padx=100, pady=6, anchor="w")
@@ -188,7 +188,7 @@ class GAApp(ctk.CTk):
             stats_container,
             text="Average Best Score: --",
             anchor="w",
-            font=("Verdana", 16)
+            font=("Verdana", 14)
         )
         self.avg_best_score_label.grid(row = 0, column = 0, padx=20, pady=5, sticky="w")
 
@@ -196,7 +196,7 @@ class GAApp(ctk.CTk):
             stats_container,
             text="Total Evaluations: --",
             anchor="w",
-            font=("Verdana", 16)
+            font=("Verdana", 14)
         )
         self.total_evals_label.grid(row = 1, column = 0, padx=20, pady=5, sticky="w")
 
@@ -204,7 +204,7 @@ class GAApp(ctk.CTk):
             stats_container,
             text="Convergence Rate: --",
             anchor="w",
-            font=("Verdana", 16)
+            font=("Verdana", 14)
         )
         self.convergence_rate_label.grid(row = 2, column = 0, padx=20, pady=5, sticky="w")
 
@@ -212,7 +212,7 @@ class GAApp(ctk.CTk):
             stats_container,
             text="Solution Found: --",
             anchor="w",
-            font=("Verdana", 16)
+            font=("Verdana", 14)
         )
         solution_found_label.grid(row = 0, column = 1, padx=20, pady=5, sticky="w")
 
@@ -286,9 +286,9 @@ class GAApp(ctk.CTk):
             stats_container,
             text="Finished!",
             anchor="w",
-            font=("Verdana", 24)
+            font=("Verdana", 16)
         )
-        finished_label.grid(row=1, column=1, padx=20, pady=20, sticky="w")
+        finished_label.grid(row=1, column=1, padx=20, pady=10, sticky="w")
 
 title_font = ("Helvetica", 18)
 global_font = ("Verdana", 16)
