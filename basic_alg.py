@@ -203,14 +203,14 @@ def find_2_max_in_row(row, n):
 #         #make the changes (in vice versa - min 1 with max 2, min 2 with max 1)
 #         mtx[min_row, min_num1], mtx[max_row, max_num2] = mtx[max_row, max_num2], mtx[min_row, min_num1]
 #         mtx[min_row, min_num2], mtx[max_row, max_num1] = mtx[max_row, max_num1], mtx[min_row, min_num2]
-        
+
 
 #         improved = mtx.flatten()
 
 #         if fitness(improved, n) > best_score:
 #             new_population.append(improved)
 #         else:
-#             new_population.append(current)  
+#             new_population.append(current)
 #     return new_population
 
 # OPTIMIZATION WITH 2 CHANGES IN DIFFERENT ROWS
@@ -352,7 +352,7 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
         # Stop early if perfect solution is found
         if best_score == 0 and is_valid_magic_square(best_solution, n):
             
-            return {
+            yield {
                 'generation': gen,
                 'best_solution': best_solution,
                 'best_score': -best_score,
@@ -362,6 +362,7 @@ def genetic_algorithm(n, population_size=100, generations=5000, stagnation_limit
                 'gen_found': gen,
                 'best_gen1': best_gen1_solution
             }
+            return
 
         # Print progress every 100 generations
         if gen % 100 == 0:
