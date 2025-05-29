@@ -18,15 +18,15 @@ def is_valid_magic_square(square, n):
 
 def run_multiple_tests():
     runs = 10
-    sizes = list(range(4, 6))  # N=3 to 5
-    algorithms = ["darwinian", "lamarckian", "classic"]
+    sizes = [8] # N=3 to 5
+    algorithms = ["darwinian", "lamarckian"]
 
     success_rates = {alg: {} for alg in algorithms}
     avg_eval_calls = {alg: {} for alg in algorithms}
     avg_solution_gen = {alg: {} for alg in algorithms}
 
     for alg in algorithms:
-        print(f"\n🚀 Testing algorithm: {alg}")
+        print(f"\nTesting algorithm: {alg}")
         for N in sizes:
             successes = 0
             total_eval_calls = 0
@@ -35,7 +35,7 @@ def run_multiple_tests():
             print(f"  🔍 N={N}")
             for run in range(1, runs + 1):
                 print(f"    ▶ Run {run}/{runs}")
-                result_gen = genetic_algorithm(N, strategy=alg)
+                result_gen = genetic_algorithm(N, strategy=alg, stagnation_limit=1000, is_perfect=True)
                 snapshots = []
                 try:
                     while True:
@@ -47,8 +47,9 @@ def run_multiple_tests():
                     elif snapshots:
                         result = snapshots[-1]
                     else:
-                        print("❌ Generator yielded nothing.")
+                        print("Generator yielded nothing.")
                         continue
+                print(snapshots[-1]["best_solution"])
 
                 solution = result['best_solution']
                 score = result['best_score']
@@ -84,7 +85,7 @@ def run_multiple_tests():
     plt.show()
 
     # --- Print Statistics ---
-    print("\n📊 Summary:")
+    print("\nSummary:")
     for alg in algorithms:
         print(f"\n🔧 {alg.capitalize()}:")
         for N in sizes:
@@ -94,7 +95,7 @@ def run_multiple_tests():
             if avg_solution_gen[alg][N] is not None:
                 print(f"    - Avg Gen to Solution: {avg_solution_gen[alg][N]:.1f}")
             else:
-                print(f"    - Avg Gen to Solution: ❌ No valid solutions")
+                print(f"    - Avg Gen to Solution: No valid solutions")
 
 if __name__ == "__main__":
     run_multiple_tests()
