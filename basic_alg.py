@@ -50,12 +50,12 @@ def fitness(individual, n):
                     mtx[i + 1, j ]
                 )
 
-                penalty += abs(np.sum(subsquare) - 2 * perfect_target)
+                penalty += abs(subsquare - 2 * perfect_target)
 
         half = n // 2
-        for i in range(n):
-            for j in range(n):
-                penalty = abs(mtx[i,j] + mtx[(i + half) % n, (j + half) % n] - perfect_target)
+        left_diag = np.diag(mtx)
+        for i in range(half):
+            penalty += abs(left_diag[i] + left_diag[i + half] - perfect_target)
 
     # Penalize deviations in both diagonals
     penalty += abs(np.sum(np.diag(mtx)) - target)             # Main diagonal
